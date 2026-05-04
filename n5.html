@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JLPT N5 Online Test - 200 Questions</title>
+    <style>
+        :root {
+            --primary: #d63031;
+            --secondary: #2d3436;
+            --success: #27ae60;
+            --error: #e74c3c;
+            --bg: #f5f6fa;
+            --white: #ffffff;
+        }
+
+        body { 
+            font-family: 'Segoe UI', Arial, sans-serif; 
+            background: var(--bg); 
+            margin: 0; 
+            display: flex; 
+            justify-content: center; 
+            padding: 10px;
+        }
+
+        .container { 
+            width: 100%; 
+            max-width: 600px; 
+            background: var(--white); 
+            padding: 20px; 
+            border-radius: 15px; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            margin-top: 20px;
+        }
+
+        header { text-align: center; border-bottom: 2px solid #eee; margin-bottom: 20px; padding-bottom: 10px; }
+        h1 { color: var(--primary); font-size: 1.5rem; margin: 0; }
+
+        /* Menu chính */
+        .menu-grid { display: grid; grid-template-columns: 1fr; gap: 12px; }
+        .btn-menu { 
+            padding: 15px; border: none; border-radius: 10px; 
+            background: var(--secondary); color: white; 
+            font-size: 1rem; font-weight: bold; cursor: pointer; 
+            transition: 0.3s;
+        }
+        .btn-menu:hover { background: var(--primary); }
+
+        /* Vùng câu hỏi */
+        #quiz-box { display: none; }
+        .progress-bar { font-size: 0.9rem; color: #666; margin-bottom: 15px; display: flex; justify-content: space-between; }
+        .q-text { font-size: 1.15rem; font-weight: bold; line-height: 1.5; margin-bottom: 20px; display: block; color: #2d3436; }
+        
+        .option-item { 
+            background: #f8f9fa; border: 2px solid #e9ecef; padding: 14px; 
+            margin-bottom: 10px; border-radius: 10px; cursor: pointer; 
+            transition: 0.2s; font-size: 1rem;
+        }
+        .option-item:active { transform: scale(0.98); }
+        .correct { background: #d4edda !important; border-color: var(--success) !important; color: #155724; }
+        .wrong { background: #f8d7da !important; border-color: var(--error) !important; color: #721c24; }
+
+        .explanation { 
+            display: none; margin-top: 15px; padding: 15px; 
+            background: #e1f5fe; border-left: 5px solid #03a9f4; 
+            border-radius: 5px; font-size: 0.95rem; line-height: 1.4;
+        }
+
+        /* Màn hình kết quả */
+        #result-screen { display: none; text-align: center; }
+        .score-circle { 
+            width: 120px; height: 120px; line-height: 120px; 
+            border-radius: 50%; background: var(--primary); 
+            color: white; font-size: 2rem; margin: 20px auto; font-weight: bold; 
+        }
+
+        .nav-btns { display: flex; justify-content: space-between; margin-top: 25px; }
+        .btn-nav { padding: 12px 20px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; }
+        #next-btn { background: var(--success); color: white; display: none; width: 100%; }
+        #exit-btn { background: #b2bec3; color: white; margin-right: 10px; }
+
+        @media (min-width: 768px) {
+            .menu-grid { grid-template-columns: 1fr 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header id="header-ui">
+        <h1>N5 MASTER TEST</h1>
+        <p style="font-size: 0.8rem; color: #7f8c8d;">Luyện thi 200 câu hỏi cấu trúc JLPT</p>
+    </header>
+
+    <!-- MÀN HÌNH CHỌN PHẦN THI -->
+    <div class="menu-grid" id="main-menu">
+        <button class="btn-menu" onclick="startQuiz('kanji')">KANJI (50 Câu)</button>
+        <button class="btn-menu" onclick="startQuiz('vocab')">TỪ VỰNG (50 Câu)</button>
+        <button class="btn-menu" onclick="startQuiz('grammar')">NGỮ PHÁP (50 Câu)</button>
+        <button class="btn-menu" onclick="startQuiz('particle')">TRỢ TỪ (50 Câu)</button>
+    </div>
+
+    <!-- MÀN HÌNH LÀM BÀI -->
+    <div id="quiz-box">
+        <div id="question-container">
+            <div class="progress-bar">
+                <span id="progress-text">Câu 1/50</span>
+                <span id="score-text">Đúng: 0</span>
+            </div>
+            <span class="q-text" id="q-text">Đang tải câu hỏi...</span>
+            <div id="options"></div>
+            <div class="explanation" id="explanation"></div>
+        </div>
+
+        <!-- MÀN HÌNH KẾT QUẢ -->
+        <div id="result-screen">
+            <h2>HOÀN THÀNH!</h2>
+            <div class="score-circle" id="final-score">0/50</div>
+            <p id="rank-comment" style="font-weight: bold; color: var(--secondary);"></p>
+            <button class="btn-menu" style="width: 100%" onclick="location.reload()">Làm lại từ đầu</button>
+        </div>
+
+        <div class="nav-btns">
+            <button class="btn-nav" id="exit-btn" onclick="goHome()">Thoát</button>
+            <button class="btn-nav" id="next-btn" onclick="nextQuestion()">Tiếp theo ➔</button>
+        </div>
+    </div>
+</div>
+
+<script>
+// DỮ LIỆU 200 CÂU HỎI (RÚT GỌN MẪU - BẠN CÓ THỂ COPY THÊM VÀO ĐÂY)
+const database = {
+    kanji: [
+        { q: "あそこに（名前）を書いてください。", a: ["なまえ", "なまえい", "めいえい", "みょうじ"], c: 0, e: "Giải thích: 名前 (Danh Tiền) nghĩa là tên gọi. Đọc là なまえ. Đáp án 4 là Miouji (Họ)." },
+        { q: "（毎日）日本語を勉強します。", a: ["まいにち", "まいしゅう", "まいつき", "まいねん"], c: 0, e: "Giải thích: 毎日 (Mỗi Nhật) là hàng ngày. 毎週 (hàng tuần), 毎月 (hàng tháng), 毎年 (hàng năm)." },
+        { q: "きょうは　（月曜日）です。", a: ["かようび", "げつようび", "すいようび", "もくようび"], c: 1, e: "<b>Giải thích:</b> 月曜日 (Nguyệt Diệu Nhật) là thứ Hai." },
+        { q: "（田中）さんは　どこですか。", a: ["なかた", "たなか", "だなか", "ななか"], c: 1, e: "<b>Giải thích:</b> 田中 là họ phổ biến ở Nhật, đọc là たなか (Điền Trung)." },
+        { q: "（半分）たべました。", a: ["はんぶん", "ほんぶん", "はんぷん", "ほんぷん"], c: 0, e: "<b>Giải thích:</b> 半分 (Bán Phân) nghĩa là một nửa." },
+        { q: "（北）のほうに　やまが　あります。", a: ["みなみ", "にし", "ひがし", "きた"], c: 3, e: "<b>Giải thích:</b> 北 (Bắc) là hướng Bắc. Các hướng khác: 南 (Nam), 西 (Tây), 東 (Đông)." },
+        { q: "きのう　（友だち）に　あいました。", a: ["ともだち", "ゆうだち", "ゆうだち", "ともたち"], c: 0, e: "<b>Giải thích:</b> 友だち (Hữu) nghĩa là bạn bè, đọc là ともだち." },
+        { q: "（先生）の　なまえは　なんですか。", a: ["いしゃ", "せんせい", "がくせい", "かいしゃいん"], c: 1, e: "先生 (Tiên sinh) nghĩa là giáo viên." },
+        { q: "（毎日）　にほんごを　べんきょうします。", a: ["まいにち", "まいしゅう", "まいつき", "まいねん"], c: 0, e: "毎日 (Mỗi nhật) nghĩa là hàng ngày." },
+        { q: "（半分）　たべました。", a: ["はんぶん", "ほんぶん", "はんぷん", "ほんぷん"], c: 0, e: "半分 (Bán phân) nghĩa là một nửa." },
+        { q: "（北）のほうに　やまが　あります。", a: ["みなみ", "にし", "ひがし", "きた"], c: 3, e: "北 (Bắc) là hướng Bắc." },
+        { q: "（金曜日）は　やすみです。", a: ["かようび", "きんようび", "げつようび", "もくようび"], c: 1, e: "金曜日 (Kim diệu nhật) là thứ Sáu." },
+        { q: "（田中）さんは　にほんじんです。", a: ["なかた", "たなか", "ななか", "なな"], c: 1, e: "田中 (Điền trung) là họ phổ biến ở Nhật." },
+        { q: "あそこに　（女の子）が　います。", a: ["おとこのこ", "おんなのこ", "おんなのひと", "おんな"], c: 1, e: "女の子 (Nữ tử tử) nghĩa là bé gái." },
+        { q: "（日本語）で　はなします。", a: ["にほんご", "にっぽんご", "にほんこ", "にっぽんこ"], c: 0, e: "日本語 (Nhật bản ngữ) nghĩa là tiếng Nhật." },
+        { q: "（来週）の　（金曜日）に　パーティーが　あります。", a: ["らいしゅう / きんようび", "こんしゅう / かようび", "らいねん / きんようび", "らいしゅう / もくようび"], c: 0, e: "<b>Giải thích:</b> 来週 (Lai chu - Tuần tới) và 金曜日 (Kim diệu nhật - Thứ 6)." },
+        { q: "（田中）さんは　（目）が　おおきいです。", a: ["たなか / め", "なかた / みみ", "たなか / くち", "なかた / め"], c: 0, e: "<b>Giải thích:</b> 田中 (Tanaka) và 目 (Mục - mắt)." },
+        { q: "きっさてんで　（紅茶）を　のみました。", a: ["おちゃ", "こうちゃ", "みず", "おんがく"], c: 1, e: "<b>Giải thích:</b> 紅茶 (Hồng trà - trà đen). Phân biệt với お茶 (Trà xanh)." },
+        { q: "この　（時計）は　（五万円）です。", a: ["とき / ごまんえん", "とけい / ごまんえん", "とけい / ごせんえん", "とき / ごせんえん"], c: 1, e: "<b>Giải thích:</b> 時計 (Thời kế - đồng hồ) đọc là とけい. 五万円 là 50,000 yên." },
+        { q: "（先生）の　なまえは　なんですか。", a: ["いしゃ", "せんせい", "がくせい", "かいしゃいん"], c: 1, e: "先生 (Tiên sinh): Giáo viên. Đọc là せんせい." },
+        { q: "（月曜日）に　テストが　あります。", a: ["かようび", "げつようび", "すいようび", "にちようび"], c: 1, e: "月曜日 (Nguyệt diệu nhật): Thứ 2." },
+// ... Thêm câu hỏi vào đây
+    ],
+    vocab: [
+        { q: "あついですね。（　　）をつけましょうか。", a: ["テレビ", "エアコン", "ラジオ", "ドア"], c: 1, e: "Giải thích: Nóng (あつい) thì phải bật máy lạnh (エアコン). つけます: Bật." },
+        { q: "にもつが重いですから、（　　）ましょうか。", a: ["もち", "あけ", "おし", "き"], c: 0, e: "Giải thích: Hành lý nặng nên tôi 'mang' hộ nhé? 持ちます (Mang, cầm)." },
+        { q: "にもつが　おもいですから、ひとつ　（　　）ましょうか。", a: ["もち", "かし", "あけ", "つけ"], c: 0, e: "<b>Giải thích:</b> 持ちます (Mang, cầm). Vì hành lý nặng nên 'Tôi mang hộ nhé?'." },
+        { q: "レポートを　（　　）から、ねます。", a: ["だして", "かいて", "よんで", "きいて"], c: 1, e: "<b>Giải thích:</b> Viết (かいて) báo cáo rồi đi ngủ là hành động logic nhất." },
+        { q: "（　　）　いっしょに　ごはんを　たべませんか。", a: ["こんばん", "こんしゅう", "きょう", "あした"], c: 0, e: "<b>Giải thích:</b> こんばん (Tối nay) thường dùng để mời mọc rủ rê đi ăn." },
+        { q: "かぜを　ひきましたから、　（　　）へ　いきます。", a: ["ぎんこう", "びょういん", "がっこう", "きっさてん"], c: 1, e: "<b>Giải thích:</b> Bị cảm (かぜ) thì phải đi bệnh viện (びょういん)." },
+        { q: "この　りょうりは　とても　（　　）です。", a: ["おいしい", "じょうず", "しずか", "きれい"], c: 0, e: "<b>Giải thích:</b> Món ăn (りょうり) thì đi với tính từ おいしい (Ngon)." },
+        { q: "あついですね。（　　）を　つけましょうか。", a: ["テレビ", "エアコン", "ラジオ", "ドア"], c: 1, e: "Nóng (あつい) thì bật máy lạnh (エアコン)." },
+        { q: "おなかが　すきましたから、ごはんを　（　　）。", a: ["のみます", "たべます", "よみます", "ききます"], c: 1, e: "Đói bụng thì ăn cơm (たべます)." },
+        { q: "（　　）　いっしょに　いきませんか。", a: ["ぜひ", "いっしょに", "いかが", "ちょっと"], c: 0, e: "ぜひ thường dùng để nhấn mạnh lời mời nhiệt tình." },
+        { q: "かぜを　ひきましたから、（　　）へ　いきます。", a: ["ぎんこう", "びょういん", "がっこう", "きっさてん"], c: 1, e: "Bị cảm (かぜ) thì đi bệnh viện (びょういん)." },
+        { q: "テストが　ありますから、こんばん　（　　）　べんきょうします。", a: ["とても", "あまり", "一生懸命", "ゆっくり"], c: 2, e: "<b>Giải thích:</b> 一生懸命 (いっしょうけんめい) nghĩa là cố gắng hết sức. Phù hợp với ngữ cảnh có bài kiểm tra." },
+        { q: "（　　）　日本へ　いきたいです。", a: ["ぜひ", "たぶん", "きっと", "もし"], c: 0, e: "<b>Giải thích:</b> ぜひ (Nhất định) dùng để nhấn mạnh mong muốn thiết tha của bản thân." },
+        { q: "この　辞書は　（　　）　いいですね。", a: ["べんりで", "じょうずで", "しずかで", "にぎやかで"], c: 0, e: "<b>Giải thích:</b> Từ phù hợp nhất để khen một quyển từ điển là べんり (Tiện lợi)." },
+        { q: "この　りょうりは　（　　）　おいしいです。", a: ["とても", "あまり", "ぜんぜん", "すこし"], c: 0, e: "Rất (とても) đi với câu khẳng định." },
+	    { q: "おなかが　すきましたから、ごはんを　（　　）。", a: ["のみます", "たべます", "かいます", "ききます"], c: 1, e: "Đói bụng thì phải 'Ăn' (たべます)." },
+        { q: "あついですね。（　　）を　つけましょうか。", a: ["テレビ", "エアコン", "ラジオ", "まど"], c: 1, e: "Nóng thì bật 'Máy lạnh' (エアコン)." },
+    ],
+    grammar: [
+        { q: "ミラーさんは　にほんごを　はなす　こと　（　　）できます。", a: ["を", "が", "に", "は"], c: 1, e: "Giải thích: Cấu trúc V-từ điển + こと が できます (Có thể làm việc gì đó)." },
+        { q: "ここで　写真を　（　　）　ください。", a: ["とらなくて", "とらないで", "とる", "とった"], c: 1, e: "Giải thích: Cấu trúc ～ないでください (Xin đừng làm gì). 撮る -> 撮らない." },
+        { q: "わたしは　にほんへ　いく　（　　）が　あります。", a: ["こと", "もの", "とき", "まえ"], c: 0, e: "<b>Giải thích:</b> Cấu trúc V-từ điển + ことがあります: Có việc/có khi làm gì đó (hoặc dùng để tạo danh từ hóa)." },
+        { q: "あぶないですから、ここで　（　　）で　ください。", a: ["あそばない", "あそばなく", "あそぶ", "あそんで"], c: 0, e: "<b>Giải thích:</b> ～ないでください: Xin đừng... (Cấm đoán lịch sự). Động từ あそぶ chuyển sang thể Nai là あそばない." },
+        { q: "わたしは　さかなを　たべる　（　　）が　すきです。", a: ["こと", "の", "もの", "が"], c: 1, e: "<b>Giải thích:</b> V-từ điển + のが好きです: Thích việc làm gì đó (Danh từ hóa động từ bằng の)." },
+        { q: "きのうは　あめでしたから、どこへも　（　　）。", a: ["いきませんでした", "いきました", "いく", "いかない"], c: 0, e: "<b>Giải thích:</b> Câu ở quá khứ (きのう) và có từ phủ định hoàn toàn 'どこへも' nên phải dùng いきませんでした." },
+        { q: "ミラーさんは　いま　でんわを　（　　）います。", a: ["かけて", "かけ", "かける", "かけた"], c: 0, e: "<b>Giải thích:</b> ～ています: Diễn tả hành động đang xảy ra." },
+        { q: "ここで　しゃしんを　（　　）で　ください。", a: ["とら", "とって", "とる", "とった"], c: 0, e: "～ないでください (Xin đừng...): Động từ chia thể Nai bỏ ない." },
+        { q: "ミラーさんは　いま　べんきょう　（　　）います。", a: ["して", "し", "する", "した"], c: 0, e: "～ています (Đang làm...): Động từ chia thể て." },
+        { q: "わたしは　にほんへ　いった　ことが　（　　）。", a: ["あります", "います", "できます", "なります"], c: 0, e: "Vた + ことが あります (Đã từng làm gì đó)." },
+        { q: "あした　あめが　（　　）　とおもいます。", a: ["ふる", "ふって", "ふった", "ふらない"], c: 0, e: "～とおもいます (Tôi nghĩ rằng...): Đi với thể ngắn/thể từ điển." },
+        { q: "（　　）ながら　おんがくを　ききます。", a: ["あるき", "あるいて", "あるく", "あるいた"], c: 0, e: "V(masu) + ながら (Vừa làm A vừa làm B)." },
+        { q: "さむいですから、まどを　（　　）　ください。", a: ["あけない", "あけて", "しめて", "しめないで"], c: 3, e: "Vì lạnh nên 'Xin đừng mở cửa': あけないで ください." },
+        { q: "つくえの　うえに　かいた　（　　）は　どこですか。", a: ["こと", "もの", "の", "とき"], c: 2, e: "<b>Giải thích:</b> Đây là mệnh đề bổ ngữ (Bài 22). 'Cái (văn bản/thứ) đã viết trên bàn'. Khi danh từ hóa hành động để hỏi vị trí, dùng 「の」." },
+        { q: "あした　あめが　（　　）ら、　いきません。", a: ["ふり", "ふる", "ふった", "ふって"], c: 2, e: "<b>Giải thích:</b> Thể điều kiện ～たら (Bài 25). Động từ chia thể quá khứ ngắn (Ta) + ら. ふる -> ふった -> ふったら (Nếu mưa)." },
+        { q: "きのうは　かぞくに　（　　）ながら、てがみを　かきました。", a: ["おもい", "おもって", "おもう", "おもった"], c: 0, e: "<b>Giải thích:</b> Cấu trúc V1(bỏ masu) + ながら + V2 (Vừa làm... vừa...). おもいます bỏ ます thành おもい." },
+        { q: "かいしゃの　ひとは　だれも　この　ことを　（　　）。", a: ["しりません", "しって　います", "しりて　いません", "しりませんでした"], c: 0, e: "<b>Giải thích:</b> Cấu trúc 'Dám cho ai biết'. Với động từ 知る, dạng phủ định hiện tại là 知りません (Bài 15)." },
+        { q: "にほんごが　じょうずに　（　　）たいです。", a: ["なります", "なって", "なり", "なる"], c: 2, e: "<b>Giải thích:</b> Muốn trở nên... Cấu trúc: [Danh từ/Tính từ] + になります. Kết hợp với ～たい (Muốn) thì động từ chia thể Masu bỏ Masu: なります -> なり + たい." },
+        { q: "すみませんが、この　しおを　（　　）ください。", a: ["とり", "とって", "とる", "とった"], c: 1, e: "<b>Giải thích:</b> Nhờ vả lịch sự ～てください. Động từ 撮る (nhóm 1) kết thúc bằng る chia thể て thành とって." },
+	    { q: "ここで　しゃしんを　（　　）で　ください。", a: ["とらな", "とら", "とる", "とった"], c: 1, e: "Cấu trúc: V-nai (bỏ nai) + ないでください (Xin đừng...). 撮る -> 撮らない -> 撮ら." },
+        { q: "わたしは　にほんへ　いった　（　　）が　あります。", a: ["とき", "こと", "もの", "まえ"], c: 1, e: "Cấu trúc: V-ta + ことがあります (Đã từng làm gì)." },
+        // ... Thêm đủ 50 câu tương tự
+        // ... (Thêm các cấu trúc: ~てもいいです, ~なければなりません, ~ことができます...)
+    ],
+    particle: [
+        { q: "日曜日に　どこ　（　　）　行きませんでした。", a: ["に", "へ", "も", "を"], c: 2, e: "Giải thích: Nghi vấn từ + も + Phủ định (どこも...ない): Không đi đâu cả." },
+        { q: "はさみ　（　　）　紙を切ります。", a: ["で", "に", "を", "から"], c: 0, e: "Giải thích: Trợ từ で chỉ phương tiện, công cụ thực hiện hành động (Cắt bằng kéo)." },
+        { q: "パン　（　　）　たまごを　たべます。", a: ["と", "に", "を", "が"], c: 0, e: "<b>Giải thích:</b> Trợ từ と dùng để nối hai danh từ song hành (Và)." },
+        { q: "こうえん　（　　）　さんぽします。", a: ["に", "を", "で", "が"], c: 2, e: "<b>Giải thích:</b> Trợ từ で chỉ địa điểm xảy ra hành động (Đi dạo tại công viên)." },
+        { q: "バス　（　　）　うちへ　かえります。", a: ["で", "に", "を", "から"], c: 0, e: "<b>Giải thích:</b> Trợ từ で chỉ phương tiện giao thông." },
+        { q: "1しゅうかん　（　　）　2かい　テニスをします。", a: ["に", "で", "を", "が"], c: 0, e: "<b>Giải thích:</b> Khoảng thời gian + に + Số lần: Tần suất thực hiện hành động." },
+        { q: "つくえの　うえ　（　　）　なにが　ありますか。", a: ["に", "で", "を", "は"], c: 0, e: "<b>Giải thích:</b> Trợ từ に chỉ sự tồn tại (Ở trên bàn có cái gì?)." },
+        { q: "にちようびに　どこ　（　　）　いきませんでした。", a: ["に", "へ", "も", "を"], c: 2, e: "Cấu trúc phủ định hoàn toàn: Từ nghi vấn + も + Phủ định (V-masen)." },
+        { q: "はさみ　（　　）　かみを　きります。", a: ["で", "に", "を", "から"], c: 0, e: "Trợ từ で chỉ công cụ, phương tiện (Cắt bằng kéo)." },
+        { q: "つくえの　うえ　（　　）　なにが　ありますか。", a: ["に", "で", "を", "は"], c: 0, e: "Trợ từ に chỉ vị trí tồn tại của đồ vật." },
+        { q: "わたしは　パン　（　　）　たまごを　たべます。", a: ["と", "に", "を", "が"], c: 0, e: "Trợ từ と dùng để liệt kê hai danh từ (Và)." },
+        { q: "バス　（　　）　うちへ　かえります。", a: ["で", "に", "を", "から"], c: 0, e: "Trợ từ で chỉ phương tiện giao thông." },
+        { q: "テニス　（　　）　すきです。", a: ["を", "は", "が", "に"], c: 2, e: "Tính từ 'Suki' luôn đi với trợ từ が để chỉ đối tượng được yêu thích." },
+        { q: "1しゅうかん　（　　）　2かい　テニスをします。", a: ["に", "で", "を", "が"], c: 0, e: "Chỉ tần suất: Khoảng thời gian + に + Số lần." },
+        { q: "あした　ともだち　（　　）　あいます。", a: ["に", "を", "へ", "で"], c: 0, e: "Động từ 会います (Gặp gỡ) luôn đi với trợ từ に." },
+        { q: "デパートへ　くつ　（　　）　かいに　いきました。", a: ["を", "が", "に", "は"], c: 2, e: "Mục đích: Danh từ + に + 行きます (Đi để làm gì)." },
+        { q: "りょうりは　おいしい　（　　）、　やすいです。", a: ["で", "し", "て", "に"], c: 1, e: "Liệt kê tính chất tương đồng: Sử dụng し (Vừa... vừa...)." },
+        { q: "わたしは　1しゅうかん　（　　）　3かい　プールへ　いきます。", a: ["で", "に", "を", "が"], c: 1, e: "<b>Giải thích:</b> Trợ từ に chỉ tần suất (Trong bao lâu làm mấy lần). Bài 11." },
+        { q: "あそこに　おまわりさん　（　　）　立って　いますね。", a: ["を", "は", "が", "に"], c: 2, e: "<b>Giải thích:</b> Diễn tả một sự việc đập vào mắt (nhấn mạnh chủ thể hành động), dùng trợ từ が. Bài 14." },
+        { q: "この　カメラは　どこ　（　　）　かいましたか。", a: ["で", "に", "へ", "を"], c: 0, e: "<b>Giải thích:</b> Diễn tả nơi xảy ra hành động mua bán, dùng trợ từ で. Bài 6." },
+        { q: "あした　にちようび　（　　）　ひまですか。", a: ["は", "に", "で", "が"], c: 0, e: "<b>Giải thích:</b> Nhấn mạnh chủ ngữ/thời gian thảo luận, dùng は. 'Ngày mai, chủ nhật thì có rảnh không?'" },
+        { q: "なつやすみは　どこ　（　　）　いきませんでした。", a: ["へ", "へも", "もへ", "に"], c: 1, e: "<b>Giải thích:</b> Phủ định hoàn toàn hướng đi: Nghi vấn từ + Trợ từ chỉ hướng (へ) + も. Bài 5." },
+        { q: "わたしは　パン　（　　）　たまごを　たべます。", a: ["と", "に", "を", "が"], c: 0, e: "Trợ từ と dùng để nối 2 danh từ: Và." },
+        { q: "1しゅうかん　（　　）　2かい　テニスをします。", a: ["で", "を", "に", "が"], c: 2, e: "Chỉ tần suất: Khoảng thời gian + に + Số lần." },
+        // ... Thêm đủ 50 câu tương tự
+    ]
+};
+
+// Cấu trúc lặp để bạn test (Tự động nhân bản cho đủ số lượng nếu thiếu)
+for(let cat in database) {
+    while(database[cat].length < 50) {
+        database[cat].push({...database[cat][0], q: database[cat][0].q + " (Câu hỏi giả lập cho đủ 50)"});
+    }
+}
+
+let currentCat = '';
+let currentIdx = 0;
+let score = 0;
+let answered = false;
+
+function startQuiz(cat) {
+    currentCat = cat;
+    currentIdx = 0;
+    score = 0;
+    document.getElementById('main-menu').style.display = 'none';
+    document.getElementById('header-ui').style.display = 'none';
+    document.getElementById('quiz-box').style.display = 'block';
+    renderQuestion();
+}
+
+function renderQuestion() {
+    answered = false;
+    const data = database[currentCat][currentIdx];
+    document.getElementById('progress-text').innerText = `Câu ${currentIdx + 1}/${database[currentCat].length}`;
+    document.getElementById('score-text').innerText = `Đúng: ${score}`;
+    document.getElementById('q-text').innerText = data.q;
+    document.getElementById('explanation').style.display = 'none';
+    document.getElementById('next-btn').style.display = 'none';
+    document.getElementById('exit-btn').style.display = 'block';
+
+    const optionsDiv = document.getElementById('options');
+    optionsDiv.innerHTML = '';
+    data.a.forEach((text, i) => {
+        const btn = document.createElement('div');
+        btn.className = 'option-item';
+        btn.innerText = text;
+        btn.onclick = () => checkAnswer(i);
+        optionsDiv.appendChild(btn);
+    });
+}
+
+function checkAnswer(idx) {
+    if(answered) return;
+    answered = true;
+    const data = database[currentCat][currentIdx];
+    const options = document.getElementsByClassName('option-item');
+    
+    if(idx === data.c) {
+        options[idx].classList.add('correct');
+        score++;
+    } else {
+        options[idx].classList.add('wrong');
+        options[data.c].classList.add('correct');
+    }
+
+    const exp = document.getElementById('explanation');
+    exp.innerHTML = `<b>Giải thích:</b> ${data.e}`;
+    exp.style.display = 'block';
+    document.getElementById('next-btn').style.display = 'block';
+    document.getElementById('exit-btn').style.display = 'none';
+}
+
+function nextQuestion() {
+    currentIdx++;
+    if(currentIdx < database[currentCat].length) {
+        renderQuestion();
+    } else {
+        showResult();
+    }
+}
+
+function showResult() {
+    document.getElementById('question-container').style.display = 'none';
+    document.getElementById('next-btn').style.display = 'none';
+    document.getElementById('result-screen').style.display = 'block';
+    
+    const total = database[currentCat].length;
+    document.getElementById('final-score').innerText = `${score}/${total}`;
+    
+    let msg = "";
+    const percent = (score/total)*100;
+    if(percent >= 80) msg = "Tuyệt vời! Bạn đã nắm chắc kiến thức.";
+    else if(percent >= 50) msg = "Khá tốt! Hãy cố gắng thêm chút nữa.";
+    else msg = "Bạn cần ôn tập kỹ hơn giáo trình Minna nhé.";
+    document.getElementById('rank-comment').innerText = msg;
+}
+
+function goHome() {
+    if(confirm("Bạn muốn thoát và mất hết kết quả hiện tại?")) {
+        location.reload();
+    }
+}
+</script>
+
+</body>
+</html>
